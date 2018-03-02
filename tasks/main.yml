@@ -1,2 +1,163 @@
----
-# tasks file for rhel7-role-hipaa
+-   name: Ensure rsyslog is installed
+    package: name="{{item}}" state=present
+    tags:
+    - package_rsyslog_installed
+    - medium_severity
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-80187-8
+    - NIST-800-53-AU-9(2)
+    with_items:
+    - rsyslog
+-   name: Enable service rsyslog
+    service: name="{{item}}" enabled="yes" state="started"
+    tags:
+    - service_rsyslog_enabled
+    - medium_severity
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-80188-6
+    - NIST-800-53-AU-4(1)
+    - NIST-800-53-AU-12
+    with_items:
+    - rsyslog
+-   lineinfile:
+        create: true
+        dest: /etc/rsyslog.conf
+        line: '*.* @@{{ rsyslog_remote_loghost_address }}'
+        regexp: ^\*\.\*
+    name: Set rsyslog remote loghost
+    tags:
+    - rsyslog_remote_loghost
+    - low_severity
+    - restrict_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27343-3
+    - DISA-STIG-RHEL-07-031000
+-   lineinfile:
+        dest: /etc/audit/auditd.conf
+        line: max_log_file_action {{ var_auditd_max_log_file_action }}
+        state: present
+    name: Configure auditd max_log_file_action Upon Reaching Maximum Log Size
+    tags:
+    - auditd_data_retention_max_log_file_action
+    - medium_severity
+    - restrict_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27231-0
+    - NIST-800-53-AU-1(b)
+    - NIST-800-53-AU-4
+    - NIST-800-53-AU-11
+    - NIST-800-53-IR-5
+    - PCI-DSS-Req-10.7
+    - CJIS-5.4.1.1
+-   lineinfile:
+        dest: /etc/audit/auditd.conf
+        line: space_left_action = {{ var_auditd_space_left_action }}
+        regexp: ^space_left_action*
+    name: Configure auditd space_left Action on Low Disk Space
+    tags:
+    - auditd_data_retention_space_left_action
+    - medium_severity
+    - restrict_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27375-5
+    - NIST-800-53-AU-1(b)
+    - NIST-800-53-AU-4
+    - NIST-800-53-AU-5(1)
+    - NIST-800-53-AU-5(b)
+    - NIST-800-53-IR-5
+    - NIST-800-171-3.3.1
+    - PCI-DSS-Req-10.7
+    - CJIS-5.4.1.1
+-   lineinfile:
+        dest: /etc/audit/auditd.conf
+        line: admin_space_left_action = {{ var_auditd_admin_space_left_action }}
+        regexp: ^admin_space_left_action*
+    name: Configure auditd admin_space_left Action on Low Disk Space
+    tags:
+    - auditd_data_retention_admin_space_left_action
+    - medium_severity
+    - restrict_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27370-6
+    - DISA-STIG-RHEL-07-030340
+-   lineinfile:
+        dest: /etc/audit/auditd.conf
+        line: action_mail_acct = {{ var_auditd_action_mail_acct }}
+        state: present
+    name: Configure auditd mail_acct Action on Low Disk Space
+    tags:
+    - auditd_data_retention_action_mail_acct
+    - medium_severity
+    - restrict_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27394-6
+    - DISA-STIG-RHEL-07-030350
+-   name: Ensure telnet-server is removed
+    package: name="{{item}}" state=absent
+    tags:
+    - package_telnet-server_removed
+    - high_severity
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27165-0
+    - DISA-STIG-RHEL-07-021710
+    with_items:
+    - telnet-server
+-   name: Ensure telnet is removed
+    package: name="{{item}}" state=absent
+    tags:
+    - package_telnet_removed
+    - low_severity
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27305-2
+    - NIST-800-171-3.1.13
+    with_items:
+    - telnet
+-   name: Ensure rsh-server is removed
+    package: name="{{item}}" state=absent
+    tags:
+    - package_rsh-server_removed
+    - high_severity
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27342-5
+    - DISA-STIG-RHEL-07-020000
+    with_items:
+    - rsh-server
+-   name: Ensure rsh is removed
+    package: name="{{item}}" state=absent
+    tags:
+    - package_rsh_removed
+    - low_severity
+    - disable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-27274-0
+    - NIST-800-171-3.1.13
+    with_items:
+    - rsh
+-   name: Enable service sshd
+    service: name="{{item}}" enabled="yes" state="started"
+    tags:
+    - service_sshd_enabled
+    - medium_severity
+    - enable_strategy
+    - low_complexity
+    - low_disruption
+    - CCE-80216-5
+    - DISA-STIG-RHEL-07-040310
+    with_items:
+    - sshd
