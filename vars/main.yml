@@ -1,5 +1,6 @@
 rsyslog_remote_loghost_address: logcollector
-var_auditd_action_mail_acct: root
-var_auditd_admin_space_left_action: single
-var_auditd_max_log_file_action: rotate
-var_auditd_space_left_action: email
+var_selinux_policy_name: targeted
+var_selinux_state: enforcing
+var_selinuxuser_execheap: false
+var_selinuxuser_execmod: true
+var_selinuxuser_execstack: true
