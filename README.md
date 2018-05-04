@@ -4,8 +4,7 @@ Health Insurance Portability and Accountability Act (HIPAA)
 Ansible remediation role for profile hipaa  
 Profile Title:  Health Insurance Portability and Accountability Act (HIPAA)  
 Profile Description:  
-  
-The HIPAA Security Rule establishes U.S. national standards to protect individuals  
+The HIPAA Security Rule establishes U.S. national standards to protect individuals'  
 electronic personal health information that is created, received, used, or  
 maintained by a covered entity. The Security Rule requires appropriate  
 administrative, physical and technical safeguards to ensure the  
@@ -15,9 +14,8 @@ information.
 This profile configures Red Hat Enterprise Linux 7 to the HIPAA Security  
 Rule identified for securing of electronic protected health information.  
   
-  
 Benchmark ID:  RHEL-7  
-Benchmark Version:  0.1.38  
+Benchmark Version:  0.1.39  
   
 XCCDF Version:  1.1  
   
