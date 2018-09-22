@@ -1,7 +1,7 @@
 # Health Insurance Portability and Accountability Act (HIPAA)
 
 [![Build Status](https://travis-ci.org/RedHatOfficial/ansible-rhel7-hipaa-role.svg?branch=master)](https://travis-ci.org/RedHatOfficial/ansible-rhel7-hipaa-role)
-[![Ansible Role](https://img.shields.io/ansible/role/26064.svg)](https://galaxy.ansible.com/RedHatOfficial/rhel7-hipaa-role)
+[![Ansible Role](https://img.shields.io/ansible/role/26064.svg)](https://galaxy.ansible.com/RedHatOfficial/rhel7_hipaa)
 [![GitHub release](https://img.shields.io/github/release/RedHatOfficial/ansible-rhel7-hipaa-role.svg)](https://github.com/RedHatOfficial/ansible-rhel7-hipaa-role/releases/latest)
 
 Ansible remediation role for profile hipaa  
@@ -45,13 +45,13 @@ N/A
 
 ## Example Playbook
 
-Run `ansible-galaxy install RedHatOfficial.rhel7-role-hipaa` to
+Run `ansible-galaxy install RedHatOfficial.rhel7_hipaa` to
 download and install the role. Then you can use the following playbook snippet.
 
 
     - hosts: all
       roles:
-         - { role: RedHatOfficial.rhel7-role-hipaa }
+         - { role: RedHatOfficial.rhel7_hipaa }
 
 
 Then first check the playbook using (on the localhost):

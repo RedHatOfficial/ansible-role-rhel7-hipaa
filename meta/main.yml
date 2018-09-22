@@ -1,4 +1,5 @@
 galaxy_info:
+  role_name: rhel7_hipaa
   author: SCAP Security Guide development team
   description: Health Insurance Portability and Accountability Act (HIPAA)
   company: "Red Hat, Inc."
