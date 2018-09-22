@@ -1,7 +1,7 @@
 # Health Insurance Portability and Accountability Act (HIPAA)
 
 [![Build Status](https://travis-ci.org/RedHatOfficial/ansible-rhel7-hipaa-role.svg?branch=master)](https://travis-ci.org/RedHatOfficial/ansible-rhel7-hipaa-role)
-[![Ansible Role](https://img.shields.io/ansible/role/26064.svg)](https://galaxy.ansible.com/RedHatOfficial/rhel7_hipaa)
+[![Ansible Role](https://img.shields.io/ansible/role/29990.svg)](https://galaxy.ansible.com/RedHatOfficial/rhel7_hipaa)
 [![GitHub release](https://img.shields.io/github/release/RedHatOfficial/ansible-rhel7-hipaa-role.svg)](https://github.com/RedHatOfficial/ansible-rhel7-hipaa-role/releases/latest)
 
 Ansible remediation role for profile hipaa  
