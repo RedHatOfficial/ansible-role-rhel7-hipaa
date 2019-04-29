@@ -1,10 +1,10 @@
 galaxy_info:
   role_name: rhel7_hipaa
-  author: SCAP Security Guide development team
+  author: ComplianceAsCode development team
   description: Health Insurance Portability and Accountability Act (HIPAA)
   company: "Red Hat, Inc."
 
-  issue_tracker_url: https://github.com/complianceascode/content/issues
+  issue_tracker_url: https://github.com/ComplianceAsCode/content/issues
 
   license: BSD-3-Clause
 
@@ -20,9 +20,10 @@ galaxy_info:
   - hardening
   - openscap
   - ssg
-  - scap-security-guide
+  - scap
   - security
   - compliance
+  - complianceascode
   - hipaa
   - redhatofficial
   - redhat

@@ -1,5 +1,5 @@
 ---
-# defaults file for rhel7-role-hipaa
+# defaults file for rhel7_hipaa
 
 audit_rules_dac_modification_chmod: true
 audit_rules_dac_modification_chown: true
@@ -84,6 +84,7 @@ medium_disruption: true
 medium_severity: true
 no_direct_root_logins: true
 no_empty_passwords: true
+no_reboot_needed: true
 no_rsh_trust_files: true
 package_rsh_removed: true
 package_talk_removed: true
@@ -91,6 +92,7 @@ package_telnet_removed: true
 package_xinetd_removed: true
 package_ypbind_removed: true
 package_ypserv_removed: true
+reboot_required: true
 restrict_serial_port_logins: true
 restrict_strategy: true
 rpm_verify_hashes: true
@@ -113,7 +115,6 @@ service_telnet_disabled: true
 service_xinetd_disabled: true
 service_ypbind_disabled: true
 service_zebra_disabled: true
-skip_ansible_lint: true
 sshd_allow_only_protocol2: true
 sshd_disable_compression: true
 sshd_disable_empty_passwords: true
