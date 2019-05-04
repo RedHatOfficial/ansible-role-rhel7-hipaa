@@ -7410,7 +7410,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
-  - find_delete_module.matched == 0
+  - find_delete_module.matched is defined and find_delete_module.matched == 0
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7439,7 +7439,7 @@
     all_files:
     - '{{ find_delete_module.files | map(attribute=''path'') | list | first }}'
   when:
-  - find_delete_module.matched > 0
+  - find_delete_module.matched is defined and find_delete_module.matched > 0
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7500,7 +7500,7 @@
     state: present
     create: true
   when:
-  - audit_arch == 'b64'
+  - audit_arch is defined and audit_arch == 'b64'
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7559,7 +7559,7 @@
     line: -a always,exit -F arch=b64 -S delete_module -k module-change
     create: true
   when:
-  - audit_arch == 'b64'
+  - audit_arch is defined and audit_arch == 'b64'
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7646,7 +7646,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
-  - find_init_module.matched == 0
+  - find_init_module.matched is defined and find_init_module.matched == 0
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7675,7 +7675,7 @@
     all_files:
     - '{{ find_init_module.files | map(attribute=''path'') | list | first }}'
   when:
-  - find_init_module.matched > 0
+  - find_init_module.matched is defined and find_init_module.matched > 0
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7736,7 +7736,7 @@
     state: present
     create: true
   when:
-  - audit_arch == 'b64'
+  - audit_arch is defined and audit_arch == 'b64'
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
@@ -7795,7 +7795,7 @@
     line: -a always,exit -F arch=b64 -S init_module -k module-change
     create: true
   when:
-  - audit_arch == 'b64'
+  - audit_arch is defined and audit_arch == 'b64'
   - ansible_virtualization_role != "guest" or ansible_virtualization_type != "docker"
   - no_reboot_needed | bool
   - medium_severity | bool
