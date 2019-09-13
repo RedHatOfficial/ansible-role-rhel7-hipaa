@@ -1,9 +1,2 @@
-var_selinuxuser_execstack: 'false'
-var_selinuxuser_execheap: 'false'
-var_selinuxuser_execmod: 'true'
-var_selinux_state: enforcing
-var_selinux_policy_name: targeted
-rsyslog_remote_loghost_address: logcollector
-var_auditd_flush: data
-var_sshd_set_keepalive: '0'
-sshd_approved_macs: hmac-sha2-512,hmac-sha2-256,hmac-sha1,hmac-sha1-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
+---
+# defaults file for rhel7_hipaa
