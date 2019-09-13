@@ -1,6 +1,15 @@
 ---
 # defaults file for rhel7_hipaa
 
+rsyslog_remote_loghost_address: true
+sshd_approved_macs: true
+var_auditd_flush: true
+var_selinux_policy_name: true
+var_selinux_state: true
+var_selinuxuser_execheap: true
+var_selinuxuser_execmod: true
+var_selinuxuser_execstack: true
+var_sshd_set_keepalive: true
 audit_rules_dac_modification_chmod: true
 audit_rules_dac_modification_chown: true
 audit_rules_dac_modification_fchmod: true
@@ -55,11 +64,11 @@ audit_rules_usergroup_modification_gshadow: true
 audit_rules_usergroup_modification_opasswd: true
 audit_rules_usergroup_modification_passwd: true
 audit_rules_usergroup_modification_shadow: true
+auditd_audispd_syslog_plugin_activated: true
 auditd_data_retention_flush: true
 configure_strategy: true
 dconf_gnome_remote_access_credential_prompt: true
 dconf_gnome_remote_access_encryption: true
-dconf_use_text_backend: true
 disable_ctrlaltdel_burstaction: true
 disable_ctrlaltdel_reboot: true
 disable_host_auth: true
@@ -72,6 +81,7 @@ ensure_redhat_gpgkey_installed: true
 file_groupowner_grub2_cfg: true
 file_owner_grub2_cfg: true
 file_permissions_grub2_cfg: true
+grub2_audit_argument: true
 grub2_disable_interactive_boot: true
 grub2_enable_selinux: true
 high_complexity: true
@@ -93,6 +103,7 @@ package_xinetd_removed: true
 package_ypbind_removed: true
 package_ypserv_removed: true
 reboot_required: true
+require_singleuser_auth: true
 restrict_serial_port_logins: true
 restrict_strategy: true
 rpm_verify_hashes: true
