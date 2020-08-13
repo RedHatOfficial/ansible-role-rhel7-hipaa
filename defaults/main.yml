@@ -3,12 +3,12 @@
 var_auditd_flush: data
 var_selinux_state: enforcing
 var_selinux_policy_name: targeted
-var_selinuxuser_execmod: 'true'
 var_selinuxuser_execheap: 'false'
 var_selinuxuser_execstack: 'false'
+var_selinuxuser_execmod: 'true'
 rsyslog_remote_loghost_address: logcollector
-sshd_approved_macs: hmac-sha2-512,hmac-sha2-256,hmac-sha1,hmac-sha1-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
 sshd_approved_ciphers: aes128-ctr,aes192-ctr,aes256-ctr,aes128-cbc,3des-cbc,aes192-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se
+sshd_approved_macs: hmac-sha2-512,hmac-sha2-256,hmac-sha1,hmac-sha1-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
 var_sshd_set_keepalive: '0'
 audit_rules_dac_modification_chmod: true
 audit_rules_dac_modification_chown: true
@@ -59,6 +59,7 @@ audit_rules_privileged_commands_unix_chkpwd: true
 audit_rules_privileged_commands_userhelper: true
 audit_rules_session_events: true
 audit_rules_sysadmin_actions: true
+audit_rules_system_shutdown: true
 audit_rules_time_adjtimex: true
 audit_rules_time_clock_settime: true
 audit_rules_time_settimeofday: true
