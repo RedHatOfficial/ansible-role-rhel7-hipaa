@@ -7466,7 +7466,7 @@
   blockinfile:
     path: /etc/audit/rules.d/30-ospp-v42-remediation.rules
     create: true
-    block: '## This content is a section of an Audit config snapshot recommended for RHEL8 sytems that target OSPP compliance.
+    block: '## This content is a section of an Audit config snapshot recommended for RHEL7 sytems that target OSPP compliance.
 
       ## The following content has been retreived on 2019-03-11 from: https://github.com/linux-audit/audit-userspace/blob/master/rules/30-ospp-v42.rules
 
