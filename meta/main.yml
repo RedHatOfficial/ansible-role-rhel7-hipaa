@@ -1,6 +1,6 @@
 galaxy_info:
   role_name: rhel7_hipaa
-  namespace: redhatofficial
+  namespace: RedHatOfficial
   author: ComplianceAsCode development team
   description: Health Insurance Portability and Accountability Act (HIPAA)
 
