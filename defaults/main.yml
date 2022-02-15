@@ -156,3 +156,4 @@ sysctl_kernel_dmesg_restrict: true
 sysctl_kernel_randomize_va_space: true
 unknown_severity: true
 unknown_strategy: true
+use_kerberos_security_all_exports: true
