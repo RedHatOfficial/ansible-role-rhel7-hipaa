@@ -92,7 +92,6 @@ ensure_gpgcheck_never_disabled: true
 ensure_redhat_gpgkey_installed: true
 file_groupowner_grub2_cfg: true
 file_owner_grub2_cfg: true
-file_permissions_grub2_cfg: true
 grub2_audit_argument: true
 grub2_disable_interactive_boot: true
 grub2_enable_selinux: true
@@ -153,6 +152,7 @@ sshd_use_approved_ciphers: true
 sshd_use_approved_macs: true
 sysctl_fs_suid_dumpable: true
 sysctl_kernel_dmesg_restrict: true
+sysctl_kernel_exec_shield: true
 sysctl_kernel_randomize_va_space: true
 unknown_severity: true
 unknown_strategy: true
