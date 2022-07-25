@@ -1004,6 +1004,33 @@
   - reboot_required | bool
   - restrict_strategy | bool
 
+- name: Verify GRUB_DISABLE_RECOVERY=true
+  lineinfile:
+    path: /etc/default/grub
+    regexp: ^GRUB_DISABLE_RECOVERY=.*
+    line: GRUB_DISABLE_RECOVERY=true
+    state: present
+  when:
+  - grub2_disable_interactive_boot | bool
+  - low_complexity | bool
+  - low_disruption | bool
+  - medium_severity | bool
+  - reboot_required | bool
+  - restrict_strategy | bool
+  - '"grub2-common" in ansible_facts.packages'
+  tags:
+  - CCE-27335-9
+  - NIST-800-171-3.1.2
+  - NIST-800-171-3.4.5
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-SC-2(1)
+  - grub2_disable_interactive_boot
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - reboot_required
+  - restrict_strategy
+
 - name: Verify that Interactive Boot is Disabled in /etc/default/grub
   replace:
     dest: /etc/default/grub
@@ -1032,6 +1059,29 @@
 
 - name: Verify that Interactive Boot is Disabled (runtime)
   command: /sbin/grubby --update-kernel=ALL --remove-args="systemd.confirm_spawn"
+  when:
+  - grub2_disable_interactive_boot | bool
+  - low_complexity | bool
+  - low_disruption | bool
+  - medium_severity | bool
+  - reboot_required | bool
+  - restrict_strategy | bool
+  - '"grub2-common" in ansible_facts.packages'
+  tags:
+  - CCE-27335-9
+  - NIST-800-171-3.1.2
+  - NIST-800-171-3.4.5
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-SC-2(1)
+  - grub2_disable_interactive_boot
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - reboot_required
+  - restrict_strategy
+
+- name: Regen grub.cfg handle updated GRUB_DISABLE_RECOVERY and confirm_spawn
+  command: grub2-mkconfig -o  /boot/grub2/grub.cfg
   when:
   - grub2_disable_interactive_boot | bool
   - low_complexity | bool
@@ -19508,55 +19558,6 @@
   - medium_severity
   - no_reboot_needed
 
-- name: Test for existence /boot/grub2/grub.cfg
-  stat:
-    path: /boot/grub2/grub.cfg
-  register: file_exists
-  when:
-  - configure_strategy | bool
-  - file_permissions_grub2_cfg | bool
-  - low_complexity | bool
-  - low_disruption | bool
-  - medium_severity | bool
-  - no_reboot_needed | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
-  tags:
-  - CCE-82039-9
-  - NIST-800-171-3.4.5
-  - NIST-800-53-AC-6(1)
-  - NIST-800-53-CM-6(a)
-  - configure_strategy
-  - file_permissions_grub2_cfg
-  - low_complexity
-  - low_disruption
-  - medium_severity
-  - no_reboot_needed
-
-- name: Ensure permission u-xs,g-xwrs,o-xwrt on /boot/grub2/grub.cfg
-  file:
-    path: /boot/grub2/grub.cfg
-    mode: u-xs,g-xwrs,o-xwrt
-  when:
-  - configure_strategy | bool
-  - file_permissions_grub2_cfg | bool
-  - low_complexity | bool
-  - low_disruption | bool
-  - medium_severity | bool
-  - no_reboot_needed | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
-  - file_exists.stat is defined and file_exists.stat.exists
-  tags:
-  - CCE-82039-9
-  - NIST-800-171-3.4.5
-  - NIST-800-53-AC-6(1)
-  - NIST-800-53-CM-6(a)
-  - configure_strategy
-  - file_permissions_grub2_cfg
-  - low_complexity
-  - low_disruption
-  - medium_severity
-  - no_reboot_needed
-
 - name: Set rsyslog remote loghost
   lineinfile:
     dest: /etc/rsyslog.conf
@@ -19707,9 +19708,12 @@
 
 - name: List /etc/sysctl.d/*.conf files
   find:
-    paths: /etc/sysctl.d/
+    paths:
+    - /etc/sysctl.d/
+    - /run/sysctl.d/
     contains: ^[\s]*kernel.dmesg_restrict.*$
     patterns: '*.conf'
+    file_type: any
   register: find_sysctl_d
   when:
   - disable_strategy | bool
@@ -19733,7 +19737,7 @@
 
 - name: Comment out any occurrences of kernel.dmesg_restrict from /etc/sysctl.d/*.conf files
   replace:
-    path: '{{ item }}'
+    path: '{{ item.path }}'
     regexp: ^[\s]*kernel.dmesg_restrict
     replace: '#kernel.dmesg_restrict'
   loop: '{{ find_sysctl_d.files }}'
@@ -19785,9 +19789,12 @@
 
 - name: List /etc/sysctl.d/*.conf files
   find:
-    paths: /etc/sysctl.d/
+    paths:
+    - /etc/sysctl.d/
+    - /run/sysctl.d/
     contains: ^[\s]*fs.suid_dumpable.*$
     patterns: '*.conf'
+    file_type: any
   register: find_sysctl_d
   when:
   - disable_strategy | bool
@@ -19810,7 +19817,7 @@
 
 - name: Comment out any occurrences of fs.suid_dumpable from /etc/sysctl.d/*.conf files
   replace:
-    path: '{{ item }}'
+    path: '{{ item.path }}'
     regexp: ^[\s]*fs.suid_dumpable
     replace: '#fs.suid_dumpable'
   loop: '{{ find_sysctl_d.files }}'
@@ -19858,11 +19865,86 @@
   - reboot_required
   - sysctl_fs_suid_dumpable
 
+- name: Check noexec argument exists
+  command: grep '^GRUB_CMDLINE_LINUX=.*noexec=.*"' /etc/default/grub
+  failed_when: false
+  register: argcheck
+  when:
+  - low_complexity | bool
+  - low_disruption | bool
+  - medium_severity | bool
+  - reboot_required | bool
+  - restrict_strategy | bool
+  - sysctl_kernel_exec_shield | bool
+  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  tags:
+  - CCE-27211-2
+  - NIST-800-171-3.1.7
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-SC-39
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - reboot_required
+  - restrict_strategy
+  - sysctl_kernel_exec_shield
+
+- name: Replace existing noexec argument
+  replace:
+    path: /etc/default/grub
+    regexp: \(^GRUB_CMDLINE_LINUX=".*\)noexec=?[^[:space:]]*\(.*"\)
+    replace: \1 \2
+  when:
+  - low_complexity | bool
+  - low_disruption | bool
+  - medium_severity | bool
+  - reboot_required | bool
+  - restrict_strategy | bool
+  - sysctl_kernel_exec_shield | bool
+  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - argcheck.rc == 0
+  tags:
+  - CCE-27211-2
+  - NIST-800-171-3.1.7
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-SC-39
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - reboot_required
+  - restrict_strategy
+  - sysctl_kernel_exec_shield
+
+- name: Update grub defaults and the bootloader menu
+  command: /sbin/grubby --update-kernel=ALL --remove-args="noexec"
+  when:
+  - low_complexity | bool
+  - low_disruption | bool
+  - medium_severity | bool
+  - reboot_required | bool
+  - restrict_strategy | bool
+  - sysctl_kernel_exec_shield | bool
+  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  tags:
+  - CCE-27211-2
+  - NIST-800-171-3.1.7
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-SC-39
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - reboot_required
+  - restrict_strategy
+  - sysctl_kernel_exec_shield
+
 - name: List /etc/sysctl.d/*.conf files
   find:
-    paths: /etc/sysctl.d/
+    paths:
+    - /etc/sysctl.d/
+    - /run/sysctl.d/
     contains: ^[\s]*kernel.randomize_va_space.*$
     patterns: '*.conf'
+    file_type: any
   register: find_sysctl_d
   when:
   - disable_strategy | bool
@@ -19888,7 +19970,7 @@
 
 - name: Comment out any occurrences of kernel.randomize_va_space from /etc/sysctl.d/*.conf files
   replace:
-    path: '{{ item }}'
+    path: '{{ item.path }}'
     regexp: ^[\s]*kernel.randomize_va_space
     replace: '#kernel.randomize_va_space'
   loop: '{{ find_sysctl_d.files }}'
