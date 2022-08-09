@@ -2,6 +2,7 @@
   set_fact:
     package_manager_reinstall_cmd: dnf reinstall -y
   when:
+  - DISA_STIG_RHEL_07_010020 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -33,6 +34,7 @@
   set_fact:
     package_manager_reinstall_cmd: yum reinstall -y
   when:
+  - DISA_STIG_RHEL_07_010020 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -69,6 +71,7 @@
   failed_when: files_with_incorrect_hash.rc > 1
   check_mode: false
   when:
+  - DISA_STIG_RHEL_07_010020 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -106,6 +109,7 @@
   changed_when: false
   check_mode: false
   when:
+  - DISA_STIG_RHEL_07_010020 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -140,6 +144,7 @@
     warn: false
   with_items: '{{ list_of_packages.results | map(attribute=''stdout_lines'') | list | unique }}'
   when:
+  - DISA_STIG_RHEL_07_010020 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -197,6 +202,7 @@
   - restrict_strategy
   - rpm_verify_permissions
   when:
+  - DISA_STIG_RHEL_07_010010 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -214,6 +220,7 @@
   changed_when: false
   check_mode: false
   when:
+  - DISA_STIG_RHEL_07_010010 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -248,6 +255,7 @@
     warn: false
   with_items: '{{ list_of_packages.results | map(attribute=''stdout_lines'') | list | unique }}'
   when:
+  - DISA_STIG_RHEL_07_010010 | bool
   - high_complexity | bool
   - high_severity | bool
   - medium_disruption | bool
@@ -499,6 +507,7 @@
   - medium_disruption
   - no_reboot_needed
   when:
+  - DISA_STIG_RHEL_07_020050 | bool
   - configure_strategy | bool
   - ensure_gpgcheck_globally_activated | bool
   - high_severity | bool
@@ -515,6 +524,7 @@
     no_extra_spaces: true
     create: false
   when:
+  - DISA_STIG_RHEL_07_020050 | bool
   - configure_strategy | bool
   - ensure_gpgcheck_globally_activated | bool
   - high_severity | bool
@@ -564,6 +574,7 @@
   - no_reboot_needed
   - unknown_strategy
   when:
+  - DISA_STIG_RHEL_07_020060 | bool
   - ensure_gpgcheck_local_packages | bool
   - high_severity | bool
   - low_complexity | bool
@@ -571,15 +582,27 @@
   - no_reboot_needed | bool
   - unknown_strategy | bool
 
-- name: Ensure GPG check Enabled for Local Packages (Yum)
-  ini_file:
-    dest: /etc/yum.conf
-    section: main
-    option: localpkg_gpgcheck
-    value: 1
-    no_extra_spaces: true
-    create: true
+- name: Ensure GPG check Enabled for Local Packages (yum)
+  block:
+  - name: Check stats of yum
+    stat:
+      path: /etc/yum.conf
+    register: pkg
+  - name: Check if config file of yum is a symlink
+    ansible.builtin.set_fact:
+      pkg_config_file_symlink: '{{ pkg.stat.lnk_target if pkg.stat.lnk_target is match("^/.*") else "/etc/yum.conf" | dirname
+        ~ "/" ~ pkg.stat.lnk_target }}'
+    when: pkg.stat.lnk_target is defined
+  - name: Ensure GPG check Enabled for Local Packages (yum)
+    ini_file:
+      dest: '{{ pkg_config_file_symlink |  default("/etc/yum.conf") }}'
+      section: main
+      option: localpkg_gpgcheck
+      value: 1
+      no_extra_spaces: true
+      create: true
   when:
+  - DISA_STIG_RHEL_07_020060 | bool
   - ensure_gpgcheck_local_packages | bool
   - high_severity | bool
   - low_complexity | bool
@@ -840,6 +863,7 @@
   - low_disruption | bool
   - medium_severity | bool
   - no_reboot_needed | bool
+  - service_debug_shell_disabled | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   tags:
   - CCE-80206-6
@@ -866,6 +890,7 @@
   - low_disruption | bool
   - medium_severity | bool
   - no_reboot_needed | bool
+  - service_debug_shell_disabled | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   tags:
   - CCE-80206-6
@@ -890,6 +915,7 @@
   - low_disruption | bool
   - medium_severity | bool
   - no_reboot_needed | bool
+  - service_debug_shell_disabled | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   - '"debug-shell.socket" in socket_file_exists.stdout_lines[1]'
   tags:
@@ -961,6 +987,7 @@
     masked: true
     state: stopped
   when:
+  - DISA_STIG_RHEL_07_020230 | bool
   - disable_ctrlaltdel_reboot | bool
   - disable_strategy | bool
   - high_severity | bool
@@ -1034,7 +1061,7 @@
 - name: Verify that Interactive Boot is Disabled in /etc/default/grub
   replace:
     dest: /etc/default/grub
-    regexp: systemd.confirm_spawn=(1|yes|true|on)
+    regexp: systemd.confirm_spawn(=(1|yes|true|on)|\b)
     replace: systemd.confirm_spawn=no
   when:
   - grub2_disable_interactive_boot | bool
@@ -1110,6 +1137,7 @@
     regexp: ^#?ExecStart=
     line: ExecStart=-/bin/sh -c "/usr/sbin/sulogin; /usr/bin/systemctl --fail --no-block default"
   when:
+  - DISA_STIG_RHEL_07_010481 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -1132,11 +1160,12 @@
   - require_singleuser_auth
   - restrict_strategy
 
-- name: Check if system relies on authselect
+- name: Prevent Login to Accounts With Empty Password - Check if system relies on authselect
   ansible.builtin.stat:
     path: /usr/bin/authselect
   register: result_authselect_present
   when:
+  - DISA_STIG_RHEL_07_010290 | bool
   - configure_strategy | bool
   - high_severity | bool
   - low_complexity | bool
@@ -1161,114 +1190,48 @@
   - no_empty_passwords
   - no_reboot_needed
 
-- name: Check integrity of authselect current profile
-  ansible.builtin.command:
-    cmd: authselect check
-  register: result_authselect_check_cmd
-  changed_when: false
-  ignore_errors: true
-  when:
-  - configure_strategy | bool
-  - high_severity | bool
-  - low_complexity | bool
-  - medium_disruption | bool
-  - no_empty_passwords | bool
-  - no_reboot_needed | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
-  - result_authselect_present.stat.exists
-  tags:
-  - CCE-27286-4
-  - CJIS-5.5.2
-  - DISA-STIG-RHEL-07-010290
-  - NIST-800-171-3.1.1
-  - NIST-800-171-3.1.5
-  - NIST-800-53-CM-6(a)
-  - NIST-800-53-IA-5(1)(a)
-  - NIST-800-53-IA-5(c)
-  - PCI-DSS-Req-8.2.3
-  - configure_strategy
-  - high_severity
-  - low_complexity
-  - medium_disruption
-  - no_empty_passwords
-  - no_reboot_needed
-
-- name: Get authselect current features
-  ansible.builtin.shell:
-    cmd: authselect current | tail -n+3 | awk '{ print $2 }'
-  register: result_authselect_features
-  changed_when: false
-  when:
-  - configure_strategy | bool
-  - high_severity | bool
-  - low_complexity | bool
-  - medium_disruption | bool
-  - no_empty_passwords | bool
-  - no_reboot_needed | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
-  - result_authselect_present.stat.exists
-  - result_authselect_check_cmd is success
-  tags:
-  - CCE-27286-4
-  - CJIS-5.5.2
-  - DISA-STIG-RHEL-07-010290
-  - NIST-800-171-3.1.1
-  - NIST-800-171-3.1.5
-  - NIST-800-53-CM-6(a)
-  - NIST-800-53-IA-5(1)(a)
-  - NIST-800-53-IA-5(c)
-  - PCI-DSS-Req-8.2.3
-  - configure_strategy
-  - high_severity
-  - low_complexity
-  - medium_disruption
-  - no_empty_passwords
-  - no_reboot_needed
-
-- name: Ensure nullok property is absent via authselect tool
-  ansible.builtin.command:
-    cmd: authselect enable-feature without-nullok
-  register: result_authselect_cmd
-  when:
-  - configure_strategy | bool
-  - high_severity | bool
-  - low_complexity | bool
-  - medium_disruption | bool
-  - no_empty_passwords | bool
-  - no_reboot_needed | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
-  - result_authselect_present.stat.exists
-  - result_authselect_check_cmd is success
-  - result_authselect_features.stdout is not search("without-nullok")
-  tags:
-  - CCE-27286-4
-  - CJIS-5.5.2
-  - DISA-STIG-RHEL-07-010290
-  - NIST-800-171-3.1.1
-  - NIST-800-171-3.1.5
-  - NIST-800-53-CM-6(a)
-  - NIST-800-53-IA-5(1)(a)
-  - NIST-800-53-IA-5(c)
-  - PCI-DSS-Req-8.2.3
-  - configure_strategy
-  - high_severity
-  - low_complexity
-  - medium_disruption
-  - no_empty_passwords
-  - no_reboot_needed
-
-- name: Informative message based on the authselect integrity check result
-  ansible.builtin.assert:
-    that:
+- name: Prevent Login to Accounts With Empty Password - Remediate using authselect
+  block:
+  - name: Prevent Login to Accounts With Empty Password - Check integrity of authselect current profile
+    ansible.builtin.command:
+      cmd: authselect check
+    register: result_authselect_check_cmd
+    changed_when: false
+    ignore_errors: true
+  - name: Prevent Login to Accounts With Empty Password - Informative message based on the authselect integrity check result
+    ansible.builtin.assert:
+      that:
+      - result_authselect_check_cmd is success
+      fail_msg:
+      - authselect integrity check failed. Remediation aborted!
+      - This remediation could not be applied because an authselect profile was not selected or the selected profile is not
+        intact.
+      - It is not recommended to manually edit the PAM files when authselect tool is available.
+      - In cases where the default authselect profile does not cover a specific demand, a custom authselect profile is recommended.
+      success_msg:
+      - authselect integrity check passed
+  - name: Prevent Login to Accounts With Empty Password - Get authselect current features
+    ansible.builtin.shell:
+      cmd: authselect current | tail -n+3 | awk '{ print $2 }'
+    register: result_authselect_features
+    changed_when: false
+    when:
     - result_authselect_check_cmd is success
-    fail_msg:
-    - authselect integrity check failed. Remediation aborted!
-    - This remediation could not be applied because the authselect profile is not intact.
-    - It is not recommended to manually edit the PAM files when authselect is available
-    - In cases where the default authselect profile does not cover a specific demand, a custom authselect profile is recommended.
-    success_msg:
-    - authselect integrity check passed
+  - name: Prevent Login to Accounts With Empty Password - Ensure "without-nullok" feature is enabled using authselect tool
+    ansible.builtin.command:
+      cmd: authselect enable-feature without-nullok
+    register: result_authselect_enable_feature_cmd
+    when:
+    - result_authselect_check_cmd is success
+    - result_authselect_features.stdout is not search("without-nullok")
+  - name: Prevent Login to Accounts With Empty Password - Ensure authselect changes are applied
+    ansible.builtin.command:
+      cmd: authselect apply-changes -b
+    when:
+    - result_authselect_enable_feature_cmd is not skipped
+    - result_authselect_enable_feature_cmd is success
   when:
+  - DISA_STIG_RHEL_07_010290 | bool
   - configure_strategy | bool
   - high_severity | bool
   - low_complexity | bool
@@ -1276,6 +1239,7 @@
   - no_empty_passwords | bool
   - no_reboot_needed | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - result_authselect_present.stat.exists
   tags:
   - CCE-27286-4
   - CJIS-5.5.2
@@ -1293,14 +1257,15 @@
   - no_empty_passwords
   - no_reboot_needed
 
-- name: Ensure nullok property is absent by directly editing pam files
-  replace:
+- name: Prevent Login to Accounts With Empty Password - Remediate directly editing PAM files
+  ansible.builtin.replace:
     dest: '{{ item }}'
     regexp: nullok
   loop:
   - /etc/pam.d/system-auth
   - /etc/pam.d/password-auth
   when:
+  - DISA_STIG_RHEL_07_010290 | bool
   - configure_strategy | bool
   - high_severity | bool
   - low_complexity | bool
@@ -1428,6 +1393,7 @@
   - no_reboot_needed
   - service_auditd_enabled
   when:
+  - DISA_STIG_RHEL_07_030000 | bool
   - enable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -1449,6 +1415,7 @@
     when:
     - '"audit" in ansible_facts.packages'
   when:
+  - DISA_STIG_RHEL_07_030000 | bool
   - enable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -1996,6 +1963,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030740 | bool
   - audit_rules_media_export | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -2007,6 +1975,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030740 | bool
   - audit_rules_media_export | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -2121,6 +2090,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030740 | bool
   - audit_rules_media_export | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -2235,6 +2205,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030740 | bool
   - audit_rules_media_export | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4076,6 +4047,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4091,6 +4063,7 @@
     patterns: '*.rules'
   register: find_audit_sysadmin_actions
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4122,6 +4095,7 @@
     all_sysadmin_actions_files:
     - /etc/audit/rules.d/actions.rules
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4154,6 +4128,7 @@
     all_sysadmin_actions_files:
     - '{{ find_audit_sysadmin_actions.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4187,6 +4162,7 @@
     line: -w /etc/sudoers -p wa -k actions
     create: true
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4219,6 +4195,7 @@
     line: -w /etc/sudoers.d/ -p wa -k actions
     create: true
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4251,6 +4228,7 @@
     line: -w /etc/sudoers -p wa -k actions
     create: true
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4283,6 +4261,7 @@
     line: -w /etc/sudoers.d/ -p wa -k actions
     create: true
   when:
+  - DISA_STIG_RHEL_07_030700 | bool
   - audit_rules_sysadmin_actions | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4327,6 +4306,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030010 | bool
   - audit_rules_system_shutdown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4340,6 +4320,7 @@
     patterns: '*.rules'
   register: find_rules_d
   when:
+  - DISA_STIG_RHEL_07_030010 | bool
   - audit_rules_system_shutdown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4369,6 +4350,7 @@
     state: absent
   loop: '{{ find_rules_d.files | map(attribute=''path'') | list + [''/etc/audit/audit.rules''] }}'
   when:
+  - DISA_STIG_RHEL_07_030010 | bool
   - audit_rules_system_shutdown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4400,6 +4382,7 @@
   - /etc/audit/audit.rules
   - /etc/audit/rules.d/immutable.rules
   when:
+  - DISA_STIG_RHEL_07_030010 | bool
   - audit_rules_system_shutdown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4443,6 +4426,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4454,6 +4438,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4487,6 +4472,7 @@
     patterns: '*.rules'
   register: find_group
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4518,6 +4504,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4549,6 +4536,7 @@
     all_files:
     - '{{ find_group.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4581,6 +4569,7 @@
     line: -w /etc/group -p wa -k audit_rules_usergroup_modification
     create: true
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4613,6 +4602,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030871 | bool
   - audit_rules_usergroup_modification_group | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4659,6 +4649,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4670,6 +4661,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4703,6 +4695,7 @@
     patterns: '*.rules'
   register: find_gshadow
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4734,6 +4727,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4765,6 +4759,7 @@
     all_files:
     - '{{ find_gshadow.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4797,6 +4792,7 @@
     line: -w /etc/gshadow -p wa -k audit_rules_usergroup_modification
     create: true
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4829,6 +4825,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030872 | bool
   - audit_rules_usergroup_modification_gshadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4875,6 +4872,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4886,6 +4884,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4919,6 +4918,7 @@
     patterns: '*.rules'
   register: find_opasswd
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4950,6 +4950,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -4981,6 +4982,7 @@
     all_files:
     - '{{ find_opasswd.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5013,6 +5015,7 @@
     line: -w /etc/security/opasswd -p wa -k audit_rules_usergroup_modification
     create: true
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5045,6 +5048,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030874 | bool
   - audit_rules_usergroup_modification_opasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5091,6 +5095,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5102,6 +5107,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5135,6 +5141,7 @@
     patterns: '*.rules'
   register: find_passwd
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5166,6 +5173,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5197,6 +5205,7 @@
     all_files:
     - '{{ find_passwd.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5229,6 +5238,7 @@
     line: -w /etc/passwd -p wa -k audit_rules_usergroup_modification
     create: true
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5261,6 +5271,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030870 | bool
   - audit_rules_usergroup_modification_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5307,6 +5318,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5318,6 +5330,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5351,6 +5364,7 @@
     patterns: '*.rules'
   register: find_shadow
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5382,6 +5396,7 @@
     all_files:
     - /etc/audit/rules.d/privileged.rules
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5413,6 +5428,7 @@
     all_files:
     - '{{ find_shadow.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5445,6 +5461,7 @@
     line: -w /etc/shadow -p wa -k audit_rules_usergroup_modification
     create: true
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5477,6 +5494,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030873 | bool
   - audit_rules_usergroup_modification_shadow | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5521,6 +5539,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_chmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5532,6 +5551,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_chmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5651,6 +5671,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_chmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5770,6 +5791,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_chmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5813,6 +5835,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_chown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5824,6 +5847,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_chown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -5945,6 +5969,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_chown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6066,6 +6091,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_chown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6109,6 +6135,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6120,6 +6147,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6239,6 +6267,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6358,6 +6387,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmod | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6401,6 +6431,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmodat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6412,6 +6443,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmodat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6531,6 +6563,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmodat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6650,6 +6683,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030410 | bool
   - audit_rules_dac_modification_fchmodat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6693,6 +6727,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6704,6 +6739,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6825,6 +6861,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6946,6 +6983,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -6989,6 +7027,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchownat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7000,6 +7039,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchownat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7121,6 +7161,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchownat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7242,6 +7283,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_fchownat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7285,6 +7327,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7296,6 +7339,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7421,6 +7465,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7546,6 +7591,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7589,6 +7635,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7600,6 +7647,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7725,6 +7773,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7850,6 +7899,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_fsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7893,6 +7943,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_lchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -7904,6 +7955,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_lchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8025,6 +8077,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_lchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8146,6 +8199,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030370 | bool
   - audit_rules_dac_modification_lchown | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8189,6 +8243,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8200,6 +8255,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8325,6 +8381,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8450,6 +8507,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lremovexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8493,6 +8551,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8504,6 +8563,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8629,6 +8689,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8754,6 +8815,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_lsetxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8797,6 +8859,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_removexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8808,6 +8871,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_removexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -8933,6 +8997,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_removexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9058,6 +9123,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_removexattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9101,6 +9167,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_setxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9112,6 +9179,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_setxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9237,6 +9305,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_setxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9362,6 +9431,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030440 | bool
   - audit_rules_dac_modification_setxattr | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9404,6 +9474,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030580 | bool
   - audit_rules_execution_chcon | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9501,6 +9572,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030580 | bool
   - audit_rules_execution_chcon | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9677,6 +9749,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030560 | bool
   - audit_rules_execution_semanage | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9774,6 +9847,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030560 | bool
   - audit_rules_execution_semanage | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9815,6 +9889,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030570 | bool
   - audit_rules_execution_setsebool | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9912,6 +9987,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030570 | bool
   - audit_rules_execution_setsebool | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9952,6 +10028,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rename | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -9963,6 +10040,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rename | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10085,6 +10163,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rename | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10207,6 +10286,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rename | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10248,6 +10328,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_renameat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10259,6 +10340,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_renameat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10381,6 +10463,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_renameat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10503,6 +10586,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_renameat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10544,6 +10628,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rmdir | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10555,6 +10640,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rmdir | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10677,6 +10763,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rmdir | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10799,6 +10886,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_rmdir | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10840,6 +10928,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlink | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10851,6 +10940,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlink | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -10973,6 +11063,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlink | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11095,6 +11186,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlink | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11136,6 +11228,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlinkat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11147,6 +11240,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlinkat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11269,6 +11363,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlinkat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11391,6 +11486,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030910 | bool
   - audit_rules_file_deletion_events_unlinkat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11433,6 +11529,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_creat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11444,6 +11541,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_creat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11571,6 +11669,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_creat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11698,6 +11797,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_creat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11826,6 +11926,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_creat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11953,6 +12054,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_creat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -11996,6 +12098,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_ftruncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12007,6 +12110,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_ftruncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12134,6 +12238,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_ftruncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12261,6 +12366,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_ftruncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12389,6 +12495,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_ftruncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12516,6 +12623,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_ftruncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12559,6 +12667,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12570,6 +12679,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12697,6 +12807,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12824,6 +12935,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -12952,6 +13064,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13079,6 +13192,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13122,6 +13236,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open_by_handle_at | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13133,6 +13248,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open_by_handle_at | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13260,6 +13376,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open_by_handle_at | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13387,6 +13504,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open_by_handle_at | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13515,6 +13633,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open_by_handle_at | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13642,6 +13761,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_open_by_handle_at | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13685,6 +13805,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_openat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13696,6 +13817,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_openat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13823,6 +13945,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_openat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -13950,6 +14073,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_openat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14078,6 +14202,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_openat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14205,6 +14330,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_openat | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14248,6 +14374,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_truncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14259,6 +14386,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_truncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14386,6 +14514,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_truncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14513,6 +14642,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_truncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14641,6 +14771,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_truncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14768,6 +14899,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030510 | bool
   - audit_rules_unsuccessful_file_modification_truncate | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -14811,6 +14943,7 @@
   - medium_severity
   - no_reboot_needed
   when:
+  - DISA_STIG_RHEL_07_030830 | bool
   - audit_rules_kernel_module_loading_delete | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -14822,6 +14955,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030830 | bool
   - audit_rules_kernel_module_loading_delete | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -14935,6 +15069,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030830 | bool
   - audit_rules_kernel_module_loading_delete | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -15048,6 +15183,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030830 | bool
   - audit_rules_kernel_module_loading_delete | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -15091,6 +15227,7 @@
   - medium_severity
   - no_reboot_needed
   when:
+  - DISA_STIG_RHEL_07_030820 | bool
   - audit_rules_kernel_module_loading_init | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -15102,6 +15239,7 @@
   set_fact:
     audit_arch: b{{ ansible_architecture | regex_replace('.*(\d\d$)','\1') }}
   when:
+  - DISA_STIG_RHEL_07_030820 | bool
   - audit_rules_kernel_module_loading_init | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -15219,6 +15357,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030820 | bool
   - audit_rules_kernel_module_loading_init | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -15336,6 +15475,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030820 | bool
   - audit_rules_kernel_module_loading_init | bool
   - configure_strategy | bool
   - low_complexity | bool
@@ -15379,6 +15519,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030610 | bool
   - audit_rules_login_events_faillock | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15394,6 +15535,7 @@
     patterns: '*.rules'
   register: find_faillock
   when:
+  - DISA_STIG_RHEL_07_030610 | bool
   - audit_rules_login_events_faillock | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15423,6 +15565,7 @@
     all_files:
     - /etc/audit/rules.d/logins.rules
   when:
+  - DISA_STIG_RHEL_07_030610 | bool
   - audit_rules_login_events_faillock | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15452,6 +15595,7 @@
     all_files:
     - '{{ find_faillock.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030610 | bool
   - audit_rules_login_events_faillock | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15482,6 +15626,7 @@
     line: -w /var/run/faillock -p wa -k logins
     create: true
   when:
+  - DISA_STIG_RHEL_07_030610 | bool
   - audit_rules_login_events_faillock | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15512,6 +15657,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030610 | bool
   - audit_rules_login_events_faillock | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15554,6 +15700,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030620 | bool
   - audit_rules_login_events_lastlog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15569,6 +15716,7 @@
     patterns: '*.rules'
   register: find_lastlog
   when:
+  - DISA_STIG_RHEL_07_030620 | bool
   - audit_rules_login_events_lastlog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15598,6 +15746,7 @@
     all_files:
     - /etc/audit/rules.d/logins.rules
   when:
+  - DISA_STIG_RHEL_07_030620 | bool
   - audit_rules_login_events_lastlog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15627,6 +15776,7 @@
     all_files:
     - '{{ find_lastlog.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030620 | bool
   - audit_rules_login_events_lastlog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15657,6 +15807,7 @@
     line: -w /var/log/lastlog -p wa -k logins
     create: true
   when:
+  - DISA_STIG_RHEL_07_030620 | bool
   - audit_rules_login_events_lastlog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15687,6 +15838,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030620 | bool
   - audit_rules_login_events_lastlog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15729,6 +15881,7 @@
   - reboot_required
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030600 | bool
   - audit_rules_login_events_tallylog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15744,6 +15897,7 @@
     patterns: '*.rules'
   register: find_tallylog
   when:
+  - DISA_STIG_RHEL_07_030600 | bool
   - audit_rules_login_events_tallylog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15773,6 +15927,7 @@
     all_files:
     - /etc/audit/rules.d/logins.rules
   when:
+  - DISA_STIG_RHEL_07_030600 | bool
   - audit_rules_login_events_tallylog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15802,6 +15957,7 @@
     all_files:
     - '{{ find_tallylog.files | map(attribute=''path'') | list | first }}'
   when:
+  - DISA_STIG_RHEL_07_030600 | bool
   - audit_rules_login_events_tallylog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15832,6 +15988,7 @@
     line: -w /var/log/tallylog -p wa -k logins
     create: true
   when:
+  - DISA_STIG_RHEL_07_030600 | bool
   - audit_rules_login_events_tallylog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15862,6 +16019,7 @@
     dest: /etc/audit/audit.rules
     create: true
   when:
+  - DISA_STIG_RHEL_07_030600 | bool
   - audit_rules_login_events_tallylog | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -15904,6 +16062,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030660 | bool
   - audit_rules_privileged_commands_chage | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16001,6 +16160,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030660 | bool
   - audit_rules_privileged_commands_chage | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16043,6 +16203,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030720 | bool
   - audit_rules_privileged_commands_chsh | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16140,6 +16301,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030720 | bool
   - audit_rules_privileged_commands_chsh | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16181,6 +16343,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030800 | bool
   - audit_rules_privileged_commands_crontab | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16278,6 +16441,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030800 | bool
   - audit_rules_privileged_commands_crontab | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16319,6 +16483,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030650 | bool
   - audit_rules_privileged_commands_gpasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16416,6 +16581,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030650 | bool
   - audit_rules_privileged_commands_gpasswd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16458,6 +16624,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030710 | bool
   - audit_rules_privileged_commands_newgrp | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16555,6 +16722,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030710 | bool
   - audit_rules_privileged_commands_newgrp | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16596,6 +16764,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030810 | bool
   - audit_rules_privileged_commands_pam_timestamp_check | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16695,6 +16864,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030810 | bool
   - audit_rules_privileged_commands_pam_timestamp_check | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16736,6 +16906,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030630 | bool
   - audit_rules_privileged_commands_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16833,6 +17004,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030630 | bool
   - audit_rules_privileged_commands_passwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16874,6 +17046,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030760 | bool
   - audit_rules_privileged_commands_postdrop | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -16971,6 +17144,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030760 | bool
   - audit_rules_privileged_commands_postdrop | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17011,6 +17185,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030770 | bool
   - audit_rules_privileged_commands_postqueue | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17108,6 +17283,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030770 | bool
   - audit_rules_privileged_commands_postqueue | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17148,6 +17324,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030780 | bool
   - audit_rules_privileged_commands_ssh_keysign | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17247,6 +17424,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030780 | bool
   - audit_rules_privileged_commands_ssh_keysign | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17287,6 +17465,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030680 | bool
   - audit_rules_privileged_commands_su | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17384,6 +17563,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030680 | bool
   - audit_rules_privileged_commands_su | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17424,6 +17604,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030690 | bool
   - audit_rules_privileged_commands_sudo | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17521,6 +17702,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030690 | bool
   - audit_rules_privileged_commands_sudo | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17696,6 +17878,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030750 | bool
   - audit_rules_privileged_commands_umount | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17793,6 +17976,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030750 | bool
   - audit_rules_privileged_commands_umount | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17840,6 +18024,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030640 | bool
   - audit_rules_privileged_commands_unix_chkpwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17937,6 +18122,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030640 | bool
   - audit_rules_privileged_commands_unix_chkpwd | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -17984,6 +18170,7 @@
   - no_reboot_needed
   - restrict_strategy
   when:
+  - DISA_STIG_RHEL_07_030670 | bool
   - audit_rules_privileged_commands_userhelper | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -18081,6 +18268,7 @@
       state: present
     when: syscalls_found | length == 0
   when:
+  - DISA_STIG_RHEL_07_030670 | bool
   - audit_rules_privileged_commands_userhelper | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -19565,6 +19753,7 @@
     line: '*.* @@{{ rsyslog_remote_loghost_address }}'
     create: true
   when:
+  - DISA_STIG_RHEL_07_031000 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -19595,6 +19784,7 @@
       masked: 'yes'
     ignore_errors: 'yes'
   when:
+  - DISA_STIG_RHEL_07_020110 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -19626,6 +19816,7 @@
   ignore_errors: true
   check_mode: false
   when:
+  - DISA_STIG_RHEL_07_020110 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -19655,6 +19846,7 @@
     state: stopped
     masked: 'yes'
   when:
+  - DISA_STIG_RHEL_07_020110 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -19685,6 +19877,36 @@
     regexp: usb-storage
     line: install usb-storage /bin/true
   when:
+  - DISA_STIG_RHEL_07_020100 | bool
+  - disable_strategy | bool
+  - low_complexity | bool
+  - medium_disruption | bool
+  - medium_severity | bool
+  - reboot_required | bool
+  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  tags:
+  - CCE-27277-3
+  - DISA-STIG-RHEL-07-020100
+  - NIST-800-171-3.1.21
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-CM-7(a)
+  - NIST-800-53-CM-7(b)
+  - NIST-800-53-MP-7
+  - disable_strategy
+  - kernel_module_usb-storage_disabled
+  - low_complexity
+  - medium_disruption
+  - medium_severity
+  - reboot_required
+
+- name: Ensure kernel module 'usb-storage' is blacklisted
+  lineinfile:
+    create: true
+    dest: /etc/modprobe.d/usb-storage.conf
+    regexp: ^blacklist usb-storage$
+    line: blacklist usb-storage
+  when:
+  - DISA_STIG_RHEL_07_020100 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - medium_disruption | bool
@@ -19947,6 +20169,7 @@
     file_type: any
   register: find_sysctl_d
   when:
+  - DISA_STIG_RHEL_07_040201 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - medium_disruption | bool
@@ -19975,6 +20198,7 @@
     replace: '#kernel.randomize_va_space'
   loop: '{{ find_sysctl_d.files }}'
   when:
+  - DISA_STIG_RHEL_07_040201 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - medium_disruption | bool
@@ -20003,6 +20227,7 @@
     state: present
     reload: true
   when:
+  - DISA_STIG_RHEL_07_040201 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - medium_disruption | bool
@@ -20106,6 +20331,7 @@
       line: SELINUXTYPE={{ var_selinux_policy_name }}
       state: present
   when:
+  - DISA_STIG_RHEL_07_020220 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -20155,6 +20381,7 @@
       line: SELINUX={{ var_selinux_state }}
       state: present
   when:
+  - DISA_STIG_RHEL_07_020210 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -20317,6 +20544,7 @@
       masked: 'yes'
     ignore_errors: 'yes'
   when:
+  - DISA_STIG_RHEL_07_021300 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -20346,6 +20574,7 @@
   ignore_errors: true
   check_mode: false
   when:
+  - DISA_STIG_RHEL_07_021300 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -20373,6 +20602,7 @@
     state: stopped
     masked: 'yes'
   when:
+  - DISA_STIG_RHEL_07_021300 | bool
   - disable_strategy | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -20631,6 +20861,7 @@
   - no_reboot_needed
   - package_ypserv_removed
   when:
+  - DISA_STIG_RHEL_07_020010 | bool
   - disable_strategy | bool
   - high_severity | bool
   - low_complexity | bool
@@ -20743,11 +20974,13 @@
   - no_reboot_needed
   - package_rsh-server_removed
   when:
+  - DISA_STIG_RHEL_07_020000 | bool
   - disable_strategy | bool
   - high_severity | bool
   - low_complexity | bool
   - low_disruption | bool
   - no_reboot_needed | bool
+  - package_rsh_server_removed | bool
 
 - name: Ensure rsh is removed
   package:
@@ -21108,6 +21341,7 @@
   - low_disruption | bool
   - medium_severity | bool
   - no_reboot_needed | bool
+  - package_talk_server_removed | bool
 
 - name: Ensure talk is removed
   package:
@@ -21146,11 +21380,13 @@
   - no_reboot_needed
   - package_telnet-server_removed
   when:
+  - DISA_STIG_RHEL_07_021710 | bool
   - disable_strategy | bool
   - high_severity | bool
   - low_complexity | bool
   - low_disruption | bool
   - no_reboot_needed | bool
+  - package_telnet_server_removed | bool
 
 - name: Ensure telnet is removed
   package:
@@ -21378,6 +21614,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040340 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21431,6 +21668,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_010470 | bool
   - disable_host_auth | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -21483,6 +21721,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040390 | bool
   - high_severity | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -21537,6 +21776,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040470 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21587,6 +21827,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_010300 | bool
   - high_severity | bool
   - low_complexity | bool
   - low_disruption | bool
@@ -21639,6 +21880,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040430 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21689,6 +21931,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040440 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21739,6 +21982,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040330 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21789,6 +22033,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040370 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21844,6 +22089,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_010460 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21895,6 +22141,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040450 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
@@ -21944,6 +22191,7 @@
       insertbefore: ^[#\s]*Match
       validate: /usr/sbin/sshd -t -f %s
   when:
+  - DISA_STIG_RHEL_07_040170 | bool
   - low_complexity | bool
   - low_disruption | bool
   - medium_severity | bool
