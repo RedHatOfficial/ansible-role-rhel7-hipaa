@@ -1,5 +1,6 @@
 ---
 # defaults file for rhel7_hipaa
+var_audit_failure_mode: '2'
 var_auditd_flush: data
 rsyslog_remote_loghost_address: logcollector
 var_selinux_policy_name: targeted
@@ -14,6 +15,7 @@ DISA_STIG_RHEL_07_010010: true
 DISA_STIG_RHEL_07_010020: true
 DISA_STIG_RHEL_07_010290: true
 DISA_STIG_RHEL_07_010300: true
+DISA_STIG_RHEL_07_010375: true
 DISA_STIG_RHEL_07_010460: true
 DISA_STIG_RHEL_07_010470: true
 DISA_STIG_RHEL_07_010481: true
