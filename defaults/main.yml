@@ -12,6 +12,7 @@ var_sshd_disable_compression: 'no'
 sshd_approved_ciphers: aes128-ctr,aes192-ctr,aes256-ctr,aes128-cbc,3des-cbc,aes192-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se
 sshd_approved_macs: hmac-sha2-512,hmac-sha2-256,hmac-sha1,hmac-sha1-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com
 DISA_STIG_RHEL_07_010010: true
+DISA_STIG_RHEL_07_010019: true
 DISA_STIG_RHEL_07_010020: true
 DISA_STIG_RHEL_07_010290: true
 DISA_STIG_RHEL_07_010300: true
@@ -147,6 +148,7 @@ audit_rules_usergroup_modification_shadow: true
 auditd_audispd_syslog_plugin_activated: true
 auditd_data_retention_flush: true
 configure_strategy: true
+dconf_db_up_to_date: true
 dconf_gnome_remote_access_credential_prompt: true
 dconf_gnome_remote_access_encryption: true
 disable_ctrlaltdel_burstaction: true
