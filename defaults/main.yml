@@ -1,6 +1,7 @@
 ---
 # defaults file for rhel7_hipaa
 var_audit_failure_mode: '2'
+var_accounts_passwords_pam_faillock_dir: /var/run/faillock
 var_auditd_flush: data
 rsyslog_remote_loghost_address: logcollector
 var_selinux_policy_name: targeted
