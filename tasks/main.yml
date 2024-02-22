@@ -1,37 +1,4 @@
-- name: 'Set fact: Package manager reinstall command (dnf)'
-  set_fact:
-    package_manager_reinstall_cmd: dnf reinstall -y
-  when:
-  - DISA_STIG_RHEL_07_010020 | bool
-  - high_complexity | bool
-  - high_severity | bool
-  - medium_disruption | bool
-  - no_reboot_needed | bool
-  - restrict_strategy | bool
-  - rpm_verify_hashes | bool
-  - ansible_distribution == "Fedora"
-  tags:
-  - CCE-27157-7
-  - CJIS-5.10.4.1
-  - DISA-STIG-RHEL-07-010020
-  - NIST-800-171-3.3.8
-  - NIST-800-171-3.4.1
-  - NIST-800-53-AU-9(3)
-  - NIST-800-53-CM-6(c)
-  - NIST-800-53-CM-6(d)
-  - NIST-800-53-SI-7
-  - NIST-800-53-SI-7(1)
-  - NIST-800-53-SI-7(6)
-  - PCI-DSS-Req-11.5
-  - PCI-DSSv4-11.5.2
-  - high_complexity
-  - high_severity
-  - medium_disruption
-  - no_reboot_needed
-  - restrict_strategy
-  - rpm_verify_hashes
-
-- name: 'Set fact: Package manager reinstall command (yum)'
+- name: 'Set fact: Package manager reinstall command'
   set_fact:
     package_manager_reinstall_cmd: yum reinstall -y
   when:
@@ -42,7 +9,7 @@
   - no_reboot_needed | bool
   - restrict_strategy | bool
   - rpm_verify_hashes | bool
-  - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "OracleLinux")
+  - ansible_distribution in [ "Fedora", "RedHat", "CentOS", "OracleLinux" ]
   tags:
   - CCE-27157-7
   - CJIS-5.10.4.1
@@ -747,7 +714,16 @@
     option: gpgcheck
     value: '1'
     no_extra_spaces: true
-  loop: '{{ repo_grep_results.stdout | regex_findall( ''(.+\.repo):\[(.+)\]\n?'' ) }}'
+  loop: '{{ repo_grep_results.stdout |regex_findall( ''(.+\.repo):\[(.+)\]\n?'' ) if repo_grep_results is not skipped else
+    []}}'
+  when:
+  - enable_strategy | bool
+  - ensure_gpgcheck_never_disabled | bool
+  - high_severity | bool
+  - low_complexity | bool
+  - medium_disruption | bool
+  - no_reboot_needed | bool
+  - repo_grep_results is not skipped
   tags:
   - CCE-26876-3
   - CJIS-5.10.4.1
@@ -769,13 +745,6 @@
   - low_complexity
   - medium_disruption
   - no_reboot_needed
-  when:
-  - enable_strategy | bool
-  - ensure_gpgcheck_never_disabled | bool
-  - high_severity | bool
-  - low_complexity | bool
-  - medium_disruption | bool
-  - no_reboot_needed | bool
 
 - name: Read permission of GPG key directory
   stat:
@@ -875,7 +844,9 @@
 
 - name: Set Fact - Valid fingerprints
   set_fact:
-    gpg_valid_fingerprints: ("567E347AD0044ADE55BA8A5F199E2F91FD431D51" "43A6E49C4A38F4BE9ABF2A5345689C882FA658E0")
+    gpg_valid_fingerprints:
+    - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+    - 43A6E49C4A38F4BE9ABF2A5345689C882FA658E0
   tags:
   - CCE-26957-1
   - CJIS-5.10.4.1
@@ -1642,7 +1613,7 @@
   - reboot_required
   - restrict_strategy
 
-- name: Add watch rule for  in /etc/audit/audit.rules
+- name: Add audit argument
   ansible.builtin.lineinfile:
     line: GRUB_CMDLINE_LINUX="audit=1 "
     state: present
@@ -1658,7 +1629,7 @@
   - restrict_strategy | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   - '"grub2-common" in ansible_facts.packages'
-  - argcheck.rc != 0 and linecheck.rc != 0
+  - argcheck is not skipped and linecheck is not skipped and argcheck.rc != 0 and linecheck.rc != 0
   tags:
   - CCE-27212-0
   - CJIS-5.4.1.1
@@ -1680,7 +1651,7 @@
 - name: Replace existing audit argument
   replace:
     path: /etc/default/grub
-    regexp: audit=\w+
+    regexp: audit=[a-zA-Z0-9,]+
     replace: audit=1
   when:
   - grub2_audit_argument | bool
@@ -1691,7 +1662,7 @@
   - restrict_strategy | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   - '"grub2-common" in ansible_facts.packages'
-  - argcheck.rc == 0 and linecheck.rc == 0
+  - argcheck is not skipped and linecheck is not skipped and argcheck.rc == 0 and linecheck.rc == 0
   tags:
   - CCE-27212-0
   - CJIS-5.4.1.1
@@ -1724,7 +1695,7 @@
   - restrict_strategy | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   - '"grub2-common" in ansible_facts.packages'
-  - argcheck.rc != 0 and linecheck.rc == 0
+  - argcheck is not skipped and linecheck is not skipped and argcheck.rc != 0 and linecheck.rc == 0
   tags:
   - CCE-27212-0
   - CJIS-5.4.1.1
@@ -21293,6 +21264,32 @@
   - restrict_strategy
   - rsyslog_remote_loghost
 
+- name: Gather the package facts
+  package_facts:
+    manager: auto
+  tags:
+  - CCE-27498-5
+  - DISA-STIG-RHEL-07-020110
+  - NIST-800-171-3.4.6
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-CM-7(a)
+  - NIST-800-53-CM-7(b)
+  - NIST-800-53-MP-7
+  - disable_strategy
+  - low_complexity
+  - low_disruption
+  - medium_severity
+  - no_reboot_needed
+  - service_autofs_disabled
+  when:
+  - DISA_STIG_RHEL_07_020110 | bool
+  - disable_strategy | bool
+  - low_complexity | bool
+  - low_disruption | bool
+  - medium_severity | bool
+  - no_reboot_needed | bool
+  - service_autofs_disabled | bool
+
 - name: Block Disable service autofs
   block:
   - name: Disable service autofs
@@ -21314,7 +21311,8 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - service_autofs_disabled | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ( ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"] and "autofs" in ansible_facts.packages
+    )
   tags:
   - CCE-27498-5
   - DISA-STIG-RHEL-07-020110
@@ -21344,7 +21342,8 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - service_autofs_disabled | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ( ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"] and "autofs" in ansible_facts.packages
+    )
   tags:
   - CCE-27498-5
   - DISA-STIG-RHEL-07-020110
@@ -21374,7 +21373,8 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - service_autofs_disabled | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ( ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"] and "autofs" in ansible_facts.packages
+    )
   - socket_file_exists.stdout_lines is search("autofs.socket",multiline=True)
   tags:
   - CCE-27498-5
@@ -21396,7 +21396,7 @@
     create: true
     dest: /etc/modprobe.d/usb-storage.conf
     regexp: install\s+usb-storage
-    line: install usb-storage /bin/true
+    line: install usb-storage /bin/false
   when:
   - DISA_STIG_RHEL_07_020100 | bool
   - disable_strategy | bool
@@ -21660,7 +21660,7 @@
   - restrict_strategy | bool
   - sysctl_kernel_exec_shield | bool
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
-  - argcheck.rc == 0
+  - argcheck is not skipped and argcheck.rc == 0
   tags:
   - CCE-27211-2
   - NIST-800-171-3.1.7
@@ -22086,7 +22086,7 @@
   - restrict_strategy
   - selinux_state
 
-- name: Ensure libsemanage-python installed
+- name: Disable the selinuxuser_execheap SELinux Boolean - Ensure libsemanage-python Installed
   package:
     name: libsemanage-python
     state: present
@@ -22097,7 +22097,6 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - sebool_selinuxuser_execheap | bool
-  - ( not ( lookup("env", "container") == "bwrap-osbuild" ) )
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   tags:
   - CCE-82312-0
@@ -22108,7 +22107,7 @@
   - no_reboot_needed
   - sebool_selinuxuser_execheap
 
-- name: Set SELinux boolean selinuxuser_execheap accordingly
+- name: Disable the selinuxuser_execheap SELinux Boolean - Set SELinux Boolean selinuxuser_execheap Accordingly
   seboolean:
     name: selinuxuser_execheap
     state: '{{ var_selinuxuser_execheap }}'
@@ -22120,8 +22119,8 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - sebool_selinuxuser_execheap | bool
-  - ( not ( lookup("env", "container") == "bwrap-osbuild" ) )
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ansible_facts.selinux.status == 'enabled'
   tags:
   - CCE-82312-0
   - enable_strategy
@@ -22131,7 +22130,7 @@
   - no_reboot_needed
   - sebool_selinuxuser_execheap
 
-- name: Ensure libsemanage-python installed
+- name: Enable the selinuxuser_execmod SELinux Boolean - Ensure libsemanage-python Installed
   package:
     name: libsemanage-python
     state: present
@@ -22142,7 +22141,6 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - sebool_selinuxuser_execmod | bool
-  - ( not ( lookup("env", "container") == "bwrap-osbuild" ) )
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   tags:
   - CCE-82313-8
@@ -22153,7 +22151,7 @@
   - no_reboot_needed
   - sebool_selinuxuser_execmod
 
-- name: Set SELinux boolean selinuxuser_execmod accordingly
+- name: Enable the selinuxuser_execmod SELinux Boolean - Set SELinux Boolean selinuxuser_execmod Accordingly
   seboolean:
     name: selinuxuser_execmod
     state: '{{ var_selinuxuser_execmod }}'
@@ -22165,8 +22163,8 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - sebool_selinuxuser_execmod | bool
-  - ( not ( lookup("env", "container") == "bwrap-osbuild" ) )
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ansible_facts.selinux.status == 'enabled'
   tags:
   - CCE-82313-8
   - enable_strategy
@@ -22176,7 +22174,7 @@
   - no_reboot_needed
   - sebool_selinuxuser_execmod
 
-- name: Ensure libsemanage-python installed
+- name: Disable the selinuxuser_execstack SELinux Boolean - Ensure libsemanage-python Installed
   package:
     name: libsemanage-python
     state: present
@@ -22187,7 +22185,6 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - sebool_selinuxuser_execstack | bool
-  - ( not ( lookup("env", "container") == "bwrap-osbuild" ) )
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
   tags:
   - CCE-82314-6
@@ -22198,7 +22195,7 @@
   - no_reboot_needed
   - sebool_selinuxuser_execstack
 
-- name: Set SELinux boolean selinuxuser_execstack accordingly
+- name: Disable the selinuxuser_execstack SELinux Boolean - Set SELinux Boolean selinuxuser_execstack Accordingly
   seboolean:
     name: selinuxuser_execstack
     state: '{{ var_selinuxuser_execstack }}'
@@ -22210,8 +22207,8 @@
   - medium_severity | bool
   - no_reboot_needed | bool
   - sebool_selinuxuser_execstack | bool
-  - ( not ( lookup("env", "container") == "bwrap-osbuild" ) )
   - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ansible_facts.selinux.status == 'enabled'
   tags:
   - CCE-82314-6
   - enable_strategy
@@ -23180,6 +23177,31 @@
   - no_reboot_needed | bool
   - package_telnet_removed | bool
 
+- name: Gather the package facts
+  package_facts:
+    manager: auto
+  tags:
+  - CCE-27401-9
+  - NIST-800-171-3.1.13
+  - NIST-800-171-3.4.7
+  - NIST-800-53-CM-6(a)
+  - NIST-800-53-CM-7(a)
+  - NIST-800-53-CM-7(b)
+  - NIST-800-53-IA-5(1)(c)
+  - disable_strategy
+  - high_severity
+  - low_complexity
+  - low_disruption
+  - no_reboot_needed
+  - service_telnet_disabled
+  when:
+  - disable_strategy | bool
+  - high_severity | bool
+  - low_complexity | bool
+  - low_disruption | bool
+  - no_reboot_needed | bool
+  - service_telnet_disabled | bool
+
 - name: Block Disable service telnet
   block:
   - name: Disable service telnet
@@ -23200,7 +23222,8 @@
   - low_disruption | bool
   - no_reboot_needed | bool
   - service_telnet_disabled | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ( ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"] and "telnet-server" in ansible_facts.packages
+    )
   tags:
   - CCE-27401-9
   - NIST-800-171-3.1.13
@@ -23229,7 +23252,8 @@
   - low_disruption | bool
   - no_reboot_needed | bool
   - service_telnet_disabled | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ( ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"] and "telnet-server" in ansible_facts.packages
+    )
   tags:
   - CCE-27401-9
   - NIST-800-171-3.1.13
@@ -23258,7 +23282,8 @@
   - low_disruption | bool
   - no_reboot_needed | bool
   - service_telnet_disabled | bool
-  - ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"]
+  - ( ansible_virtualization_type not in ["docker", "lxc", "openvz", "podman", "container"] and "telnet-server" in ansible_facts.packages
+    )
   - socket_file_exists.stdout_lines is search("telnet.socket",multiline=True)
   tags:
   - CCE-27401-9
